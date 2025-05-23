@@ -3,3 +3,6 @@
 playwright>=1.43.0
 python-dotenv>=1.0.1  # 用來管理帳密等環境變數
 aiohttp
+moviepy>=2.2.1
+pillow<10
+whisper

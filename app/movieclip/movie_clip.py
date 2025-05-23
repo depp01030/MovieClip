@@ -6,7 +6,7 @@ from playwright.async_api import async_playwright
 
 SEARCH_TERM = "i am surprised"
 SEARCH_URL = "https://clip.cafe/?s={0}&usersearch=1&ss=s"
-#SEARCH_URL = "https://yarn.co/yarn-find?text=i%20am%20surprised"
+# SEARCH_URL = "https://yarn.co/yarn-find?text=i%20am%20surprised"
 import os
 
 async def download_video(url, save_path):
@@ -31,13 +31,23 @@ async def scrape_videos(search_term):
     print("🎬 [movieclip] 任務開始")
     search_url = SEARCH_URL.format(search_term.replace(" ","+")) 
     print(f"🔍 搜尋網址：{search_url}")
+    user_data_dir = "/tmp/playwright-chrome-profile"
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
-        page = await context.new_page()
-
+        context = await p.chromium.launch_persistent_context(
+            user_data_dir,
+            headless=False,
+            executable_path="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            args=[],
+            viewport={"width": 1280, "height": 800},
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        )
+        page = context.pages[0] if context.pages else await context.new_page()
         await page.goto(search_url)
-
+        # 模擬真人滑鼠移動
+        await page.mouse.move(100, 100)
+        await page.wait_for_timeout(500)
+        await page.mouse.move(200, 200)
+        await page.wait_for_timeout(500)
         # await page.fill('#search-input', serching_term)
  
         # await page.click('#searchbox-frontpage > button')
@@ -73,7 +83,6 @@ async def scrape_videos(search_term):
  
 
  
-        await browser.close()
+        await context.close()
         print("🏁 所有任務完成")
 
- 
