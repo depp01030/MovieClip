@@ -4,8 +4,9 @@ import os
 #%%
 def burn_subtitle(video_path: str, subtitle_path: str, output_path: str):
     # 確保路徑都存在
-    mp4_file = Path(video_path)
-    subtitle = Path(subtitle_path)
+    mp4_file = Path(video_path).resolve()
+    subtitle = Path(subtitle_path).resolve()
+    output_file = Path(output_path).resolve()
 
     if not mp4_file.exists():
         raise FileNotFoundError(f"影片不存在：{mp4_file}")
@@ -13,13 +14,18 @@ def burn_subtitle(video_path: str, subtitle_path: str, output_path: str):
         raise FileNotFoundError(f"字幕不存在：{subtitle}")
 
     # 建立輸出資料夾（如果需要）
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # ffmpeg 命令，強制音訊參數統一，並只取第一組音訊與影像
+    # ffmpeg filter 參數要 escape 特殊字元
+    # 先調整成 16:9 再加字幕，避免字幕被裁切
+    scale_crop_filter = "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080"
+    subtitle_filter = "ass='{}'".format(str(subtitle).replace("'", r"\\'"))
+    vf_filter = f"{scale_crop_filter},{subtitle_filter}"
+
     cmd = [
         "ffmpeg",
         "-i", str(mp4_file),
-        "-vf", f"ass={subtitle}",
+        "-vf", vf_filter,
         "-map", "0:v:0",
         "-map", "0:a:0?",
         "-c:v", "libx264",
@@ -30,7 +36,7 @@ def burn_subtitle(video_path: str, subtitle_path: str, output_path: str):
         "-ar", "44100",
         "-ac", "2",
         "-movflags", "+faststart",
-        str(output_path)
+        str(output_file)
     ]
 
     try:
